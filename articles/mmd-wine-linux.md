@@ -29,7 +29,7 @@ MikuMikuDance（MMD）を Linux 上の Wine で動かそうとすると、左側
 
 ### 0. Wine と unar をインストール
 
-パッケージマネージャまたは [WineHQ](https://wiki.winehq.org/Download) からお好きな方法でインストールしてください。
+お使いのディストリビューションのパッケージマネージャまたは [WineHQ](https://wiki.winehq.org/Download) からお好きな方法でインストールしてください。
 
 筆者は openSUSE を使用しているので以下のようにインストールしました。
 
