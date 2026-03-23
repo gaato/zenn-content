@@ -94,3 +94,10 @@ WINEPREFIX=~/.wine-mmd wine MikuMikuDance.exe
 ## まとめ
 
 - MMD を Wine で動かすなら **64bitOS 版 + DXVK** の組み合わせが必要
+
+## 参考
+
+- [VPVP（MMD 公式サイト）](https://sites.google.com/view/vpvp/)
+- [WineでMMDを動かそうとしているのですが、操作する所が真っ黒にな... - Yahoo!知恵袋](https://detail.chiebukuro.yahoo.co.jp/qa/question_detail/q14325584354)
+- [Running MikuMikuDance in Linux using Wine and DXVK - LearnMMD](https://learnmmd.com/http:/learnmmd.com/wine-mmd-mikumikudance-linux/)
+- [DXVK - GitHub](https://github.com/doitsujin/dxvk)
