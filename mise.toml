@@ -1,26 +1,19 @@
 [tools]
 node = "26"
-pnpm = "12"
-
-[hooks]
-postinstall = "pnpm install --frozen-lockfile"
-
-[tasks.install]
-description = "依存関係をインストール"
-run = "pnpm install --frozen-lockfile"
+"npm:zenn-cli" = "latest"
 
 [tasks.preview]
 description = "Zenn のプレビューサーバーを起動"
-run = "pnpm exec zenn preview"
+run = "zenn preview"
 
 [tasks."new:article"]
 description = "記事を新規作成 (例: mise run new:article -- --slug my-article)"
-run = "pnpm exec zenn new:article"
+run = "zenn new:article"
 
 [tasks."new:book"]
 description = "本を新規作成"
-run = "pnpm exec zenn new:book"
+run = "zenn new:book"
 
 [tasks.update]
 description = "zenn-cli を最新に更新"
-run = "pnpm update --latest"
+run = "mise upgrade npm:zenn-cli"

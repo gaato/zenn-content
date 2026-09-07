@@ -4,7 +4,7 @@ Zenn の記事・本のソース。
 
 ## セットアップ
 
-[mise](https://mise.jdx.dev/) で Node.js と pnpm を管理している。
+[mise](https://mise.jdx.dev/) で Node.js と zenn-cli を管理している。
 
 ```fish
 mise trust
