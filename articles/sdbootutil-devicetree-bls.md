@@ -12,7 +12,7 @@ published: true
 
 Radxa ROCK 5 ITX+（Rockchip RK3588 を載せた mini-ITX の ARM ボード）で、openSUSE MicroOS を UEFI ファームウェアと systemd-boot の組み合わせで動かしています。
 
-このボードの NPU を Immich の機械学習に使おうと比較的最近 Linux カーネルに追加された `rocket` ドライバ[^10]を試したところ、`modprobe rocket` しても `/dev/accel/accel0` が出てきませんでした。openSUSE が配布する `rk3588-rock-5-itx.dtb` で NPU のノードが `disabled` になっているのが原因だと思ったので、NPU を有効にした DTB に差し替えようとしたのですが、そもそも OS 側の DTB は起動に使われていませんでした。
+このボードの NPU を Immich の機械学習に使おうと比較的最近 Linux カーネルに追加された `rocket` ドライバ[^1]を試したところ、`modprobe rocket` しても `/dev/accel/accel0` が出てきませんでした。openSUSE が配布する `rk3588-rock-5-itx.dtb` で NPU のノードが `disabled` になっているのが原因だと思ったので、NPU を有効にした DTB に差し替えようとしたのですが、そもそも OS 側の DTB は起動に使われていませんでした。
 
 ## Device Tree とは何か
 
@@ -76,13 +76,13 @@ ROCK 5 ITX+ の SPI フラッシュに入っている UEFI ファームウェア
 
 https://github.com/edk2-porting/edk2-rk3588
 
-このファームウェアは設定メニューで ACPI モードと Device Tree モードを切り替えられます。Device Tree モードでは、ファームウェアに埋め込まれたボード用の DTB を読み込み、設定に応じた修正を加えたうえで、EFI の設定テーブルに `EFI_DTB_TABLE` として登録します[^1]。これが図の (1) で、実機で見えていた DTB はこれでした。
+このファームウェアは設定メニューで ACPI モードと Device Tree モードを切り替えられます。Device Tree モードでは、ファームウェアに埋め込まれたボード用の DTB を読み込み、設定に応じた修正を加えたうえで、EFI の設定テーブルに `EFI_DTB_TABLE` として登録します[^2]。これが図の (1) で、実機で見えていた DTB はこれでした。
 
 ファームウェアの DTB は、ファームウェアをビルドした時点のカーネルソースから来ています。カーネルより古いのが普通で、NPU のように後から DTB で有効化された機能は含まれていません。
 
 edk2-rk3588 には、ブートデバイス上の `\dtb`、`\dtb\base`、`\dtb\rockchip` に置いた `<ボード名>.dtb` を代わりに読む機能もあります。ただしこの方法では、パーティションに置いた一つの DTB をすべてのカーネルで共有することになり、カーネルのバージョンごとに切り替えることはできません。
 
-U-Boot をファームウェアにしているボードでも同じです。U-Boot にも UEFI 実装があり、内蔵の DTB を設定テーブルに登録したうえで、`fdtfile` 環境変数をもとに ESP の `/dtb/` などから DTB を探します[^2]。
+U-Boot をファームウェアにしているボードでも同じです。U-Boot にも UEFI 実装があり、内蔵の DTB を設定テーブルに登録したうえで、`fdtfile` 環境変数をもとに ESP の `/dtb/` などから DTB を探します[^3]。
 
 ### ブートローダが DTB を差し替える
 
@@ -92,11 +92,11 @@ systemd-boot の実装は `src/boot/devicetree.c` にあります。ファイル
 
 GRUB も同様で、`devicetree` コマンドが DTB を読み込み、設定テーブルを差し替えます。
 
-ただし edk2-rk3588 の FdtPlatformDxe を読む限り、`EFI_DT_FIXUP_PROTOCOL` は実装されていません[^1]。README にも、ファームウェア設定に応じた修正（PCIe や SATA、USB の切り替え）は GRUB の `devicetree` コマンドなどで差し替えた DTB には適用されない、と書かれています[^3]。ブートローダで DTB を差し替えると、ファームウェアの設定メニューで選んだ内容は DTB に反映されなくなります。手元の構成では NVMe も SATA も問題なく動いていますが、ファームウェア側で PCIe と SATA を切り替えている場合は気をつけてください。
+ただし edk2-rk3588 の FdtPlatformDxe を読む限り、`EFI_DT_FIXUP_PROTOCOL` は実装されていません[^2]。README にも、ファームウェア設定に応じた修正（PCIe や SATA、USB の切り替え）は GRUB の `devicetree` コマンドなどで差し替えた DTB には適用されない、と書かれています[^4]。ブートローダで DTB を差し替えると、ファームウェアの設定メニューで選んだ内容は DTB に反映されなくなります。手元の構成では NVMe も SATA も問題なく動いていますが、ファームウェア側で PCIe と SATA を切り替えている場合は気をつけてください。
 
 ### カーネルの EFI スタブが受け取る
 
-Linux の aarch64 カーネルは EFI アプリケーションとしても動くように作られていて、その入口が EFI スタブです。EFI スタブは設定テーブルから `EFI_DTB_TABLE` を取り出し、UEFI のメモリマップなどを `chosen` ノードに書き加えたうえで、ブートサービスを終了してカーネル本体に渡します[^4]。先ほど見た `linux,uefi-*` プロパティはここで書き込まれたものです。
+Linux の aarch64 カーネルは EFI アプリケーションとしても動くように作られていて、その入口が EFI スタブです。EFI スタブは設定テーブルから `EFI_DTB_TABLE` を取り出し、UEFI のメモリマップなどを `chosen` ノードに書き加えたうえで、ブートサービスを終了してカーネル本体に渡します[^5]。先ほど見た `linux,uefi-*` プロパティはここで書き込まれたものです。
 
 どこから DTB を得たかはカーネルのログに記録されます。
 
@@ -104,7 +104,7 @@ Linux の aarch64 カーネルは EFI アプリケーションとしても動く
 EFI stub: Using DTB from configuration table
 ```
 
-コマンドラインの `dtb=` で指定する経路もありますが、これはカーネル側でオプション扱いのうえ、Secure Boot が有効なときは無視されます[^4]。
+コマンドラインの `dtb=` で指定する経路もありますが、これはカーネル側でオプション扱いのうえ、Secure Boot が有効なときは無視されます[^5]。
 
 ### DTB の供給源を整理する
 
@@ -119,7 +119,7 @@ EFI stub: Using DTB from configuration table
 
 ## BLS エントリの `devicetree` フィールド
 
-Boot Loader Specification の Type 1 エントリは、ESP や XBOOTLDR パーティションの `loader/entries/` に置く小さなテキストファイルです。`linux`、`initrd`、`options` などと並んで `devicetree` というキーが定義されています[^5]。
+Boot Loader Specification の Type 1 エントリは、ESP や XBOOTLDR パーティションの `loader/entries/` に置く小さなテキストファイルです。`linux`、`initrd`、`options` などと並んで `devicetree` というキーが定義されています[^6]。
 
 ```
 title      openSUSE MicroOS 20260605
@@ -148,11 +148,11 @@ if (entry->devicetree && !secure_boot_enabled()) {
 
 https://github.com/systemd/systemd/blob/v260.2/src/boot/boot.c#L2832-L2839
 
-GRUB も同じ判断をしています。`devicetree` コマンドはロックダウンの対象として登録されていて、Secure Boot が有効で GRUB がロックダウンモードに入っていると実行できません[^6]。前述のとおり、カーネルの EFI スタブも `dtb=` を Secure Boot 下では無視します。
+GRUB も同じ判断をしています。`devicetree` コマンドはロックダウンの対象として登録されていて、Secure Boot が有効で GRUB がロックダウンモードに入っていると実行できません[^7]。前述のとおり、カーネルの EFI スタブも `dtb=` を Secure Boot 下では無視します。
 
 理由はコメントにあるとおりです。DTB はハードウェアの接続を定義するデータで、任意のメモリ範囲をデバイスに割り当てさせることができます。署名されていない DTB を読み込むのは、署名されていないコードを実行するのとほぼ同じです。
 
-署名された DTB を使いたいなら、systemd の Unified Kernel Image（UKI）に `.dtb` セクションとして埋め込み、カーネルと一緒に署名する方法があります。systemd-stub は `.dtb` に加えて、ファームウェアの DTB の `compatible` プロパティを見て複数の候補から自動選択する `.dtbauto` セクションもサポートしています[^7]。
+署名された DTB を使いたいなら、systemd の Unified Kernel Image（UKI）に `.dtb` セクションとして埋め込み、カーネルと一緒に署名する方法があります。systemd-stub は `.dtb` に加えて、ファームウェアの DTB の `compatible` プロパティを見て複数の候補から自動選択する `.dtbauto` セクションもサポートしています[^8]。
 
 ## Measured Boot と DTB
 
@@ -160,7 +160,7 @@ TPM で PCR 値を測り、その値でディスクを自動アンロックす�
 
 ### GRUB は測る
 
-GRUB は実行したコマンド文字列を PCR 8 に、読み込んだファイルの内容を PCR 9 に測定します[^8]。BLS エントリに `devicetree` 行があれば、GRUB は `devicetree` コマンドを実行して DTB ファイルを読むので、両方の PCR が変わります。
+GRUB は実行したコマンド文字列を PCR 8 に、読み込んだファイルの内容を PCR 9 に測定します[^9]。BLS エントリに `devicetree` 行があれば、GRUB は `devicetree` コマンドを実行して DTB ファイルを読むので、両方の PCR が変わります。
 
 ### systemd-boot は測らない
 
@@ -170,7 +170,7 @@ https://github.com/systemd/systemd/blob/v260.2/src/boot/devicetree.c#L65-L107
 
 ソースを読むだけでは不安だったので、aarch64 の QEMU/libvirt 仮想マシンに swtpm で TPM2 を付け、systemd-boot 260.2 で確認しました。外部 DTB には、その VM が通常起動したときに `/sys/firmware/fdt` から取り出した実物の FDT を使っています。`devicetree` 行の有無だけが異なる 2 つの Type 1 エントリで起動を比べたところ、TPM のイベントログと PCR 9、12、15 の値は完全に一致し、DTB のハッシュはイベントログのどこにも現れませんでした。
 
-なお UKI の `.dtb` セクションは話が別で、systemd-stub は埋め込まれた DTB や DTB アドオンを PCR に測定します[^7]。
+なお UKI の `.dtb` セクションは話が別で、systemd-stub は埋め込まれた DTB や DTB アドオンを PCR に測定します[^8]。
 
 ### 測定されないことの意味
 
@@ -243,7 +243,7 @@ DTB の探し方も一回直しています。最初は ESP 配下のパスだ�
 
 ## その後: NPU はどうなったか
 
-NPU を有効化する上流のコミット[^9]は Linux 7.2 に収録され、7.2 は 2026 年 8 月 16 日にリリースされました。Tumbleweed の aarch64 リポジトリでも 2026 年 8 月 30 日のスナップショットから `kernel-default` と `dtb-rockchip` の 7.2.2 が配信されています。
+NPU を有効化する上流のコミット[^10]は Linux 7.2 に収録され、7.2 は 2026 年 8 月 16 日にリリースされました。Tumbleweed の aarch64 リポジトリでも 2026 年 8 月 30 日のスナップショットから `kernel-default` と `dtb-rockchip` の 7.2.2 が配信されています。
 
 `DEVICETREE_SOURCE` を `%V` で書いてあるので、カーネルを更新すれば DTB も `/boot/dtb-<バージョン>/` のものに自動で切り替わります。7.2.3 に更新した実機では、BLS エントリの `devicetree` が 7.2.3 のものを指し、NPU のノードが `okay` になって `rocket` ドライバが 3 コアを認識しています。
 
@@ -275,13 +275,13 @@ accel0
 - GRUB は DTB を PCR 8 と 9 に測定するが、systemd-boot は Type 1 エントリの DTB を測定しない
 - この理解をもとに openSUSE の sdbootutil に `DEVICETREE_SOURCE` を追加し、ディストリビューションの DTB がカーネル更新に追従して起動に使われるようにした
 
-[^1]: [edk2-rk3588 の FDT 処理 (FdtPlatformDxe.c)](https://github.com/edk2-porting/edk2-rk3588/blob/master/edk2-rockchip/Silicon/Rockchip/RK3588/Drivers/FdtPlatformDxe/FdtPlatformDxe.c)
-[^2]: [U-Boot の EFI ブートメソッド (boot/bootmeth_efi.c)](https://github.com/u-boot/u-boot/blob/master/boot/bootmeth_efi.c)
-[^3]: [edk2-rk3588: Device Tree configuration](https://github.com/edk2-porting/edk2-rk3588#device-tree-configuration)
-[^4]: [Linux EFI スタブの DTB 処理 (drivers/firmware/efi/libstub/fdt.c)](https://github.com/torvalds/linux/blob/master/drivers/firmware/efi/libstub/fdt.c)
-[^5]: [Boot Loader Specification](https://uapi-group.org/specifications/specs/boot_loader_specification/)
-[^6]: [GRUB の devicetree コマンド (grub-core/loader/efi/fdt.c)](https://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/loader/efi/fdt.c)
-[^7]: [systemd-stub の UKI セクション処理 (src/boot/stub.c)](https://github.com/systemd/systemd/blob/main/src/boot/stub.c)
-[^8]: [GRUB Manual: Measured Boot](https://www.gnu.org/software/grub/manual/grub/html_node/Measured-Boot.html)
-[^9]: [arm64: dts: rockchip: Enable the NPU on rk3588-rock-5-itx](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=e4f7054e819eece6fd83072ff2dcefc7a36224c0)
-[^10]: [accel/rocket Rockchip NPU driver — The Linux Kernel documentation](https://docs.kernel.org/accel/rocket/index.html)
+[^1]: [accel/rocket Rockchip NPU driver — The Linux Kernel documentation](https://docs.kernel.org/accel/rocket/index.html)
+[^2]: [edk2-rk3588 の FDT 処理 (FdtPlatformDxe.c)](https://github.com/edk2-porting/edk2-rk3588/blob/master/edk2-rockchip/Silicon/Rockchip/RK3588/Drivers/FdtPlatformDxe/FdtPlatformDxe.c)
+[^3]: [U-Boot の EFI ブートメソッド (boot/bootmeth_efi.c)](https://github.com/u-boot/u-boot/blob/master/boot/bootmeth_efi.c)
+[^4]: [edk2-rk3588: Device Tree configuration](https://github.com/edk2-porting/edk2-rk3588#device-tree-configuration)
+[^5]: [Linux EFI スタブの DTB 処理 (drivers/firmware/efi/libstub/fdt.c)](https://github.com/torvalds/linux/blob/master/drivers/firmware/efi/libstub/fdt.c)
+[^6]: [Boot Loader Specification](https://uapi-group.org/specifications/specs/boot_loader_specification/)
+[^7]: [GRUB の devicetree コマンド (grub-core/loader/efi/fdt.c)](https://git.savannah.gnu.org/cgit/grub.git/tree/grub-core/loader/efi/fdt.c)
+[^8]: [systemd-stub の UKI セクション処理 (src/boot/stub.c)](https://github.com/systemd/systemd/blob/main/src/boot/stub.c)
+[^9]: [GRUB Manual: Measured Boot](https://www.gnu.org/software/grub/manual/grub/html_node/Measured-Boot.html)
+[^10]: [arm64: dts: rockchip: Enable the NPU on rk3588-rock-5-itx](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=e4f7054e819eece6fd83072ff2dcefc7a36224c0)
