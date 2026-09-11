@@ -12,7 +12,7 @@ published: true
 
 Radxa ROCK 5 ITX+（Rockchip RK3588 を載せた mini-ITX の ARM ボード）で、openSUSE MicroOS を UEFI ファームウェアと systemd-boot の組み合わせで動かしています。
 
-このボードの NPU を Immich の機械学習に使おうと比較的最近 Linux カーネルに追加された `rocket` ドライバを試したところ、`modprobe rocket` しても `/dev/accel/accel0` が出てきませんでした。openSUSE が配布する `rk3588-rock-5-itx.dtb` で NPU のノードが `disabled` になっているのが原因だと思ったので、NPU を有効にした DTB に差し替えようとしたのですが、そもそも OS 側の DTB は起動に使われていませんでした。
+このボードの NPU を Immich の機械学習に使おうと比較的最近 Linux カーネルに追加された `rocket` ドライバ[^10]を試したところ、`modprobe rocket` しても `/dev/accel/accel0` が出てきませんでした。openSUSE が配布する `rk3588-rock-5-itx.dtb` で NPU のノードが `disabled` になっているのが原因だと思ったので、NPU を有効にした DTB に差し替えようとしたのですが、そもそも OS 側の DTB は起動に使われていませんでした。
 
 ## Device Tree とは何か
 
@@ -284,3 +284,4 @@ accel0
 [^7]: [systemd-stub の UKI セクション処理 (src/boot/stub.c)](https://github.com/systemd/systemd/blob/main/src/boot/stub.c)
 [^8]: [GRUB Manual: Measured Boot](https://www.gnu.org/software/grub/manual/grub/html_node/Measured-Boot.html)
 [^9]: [arm64: dts: rockchip: Enable the NPU on rk3588-rock-5-itx](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=e4f7054e819eece6fd83072ff2dcefc7a36224c0)
+[^10]: [accel/rocket Rockchip NPU driver — The Linux Kernel documentation](https://docs.kernel.org/accel/rocket/index.html)
