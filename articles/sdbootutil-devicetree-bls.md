@@ -12,7 +12,7 @@ published: true
 
 Radxa ROCK 5 ITX+（Rockchip RK3588 を載せた mini-ITX の ARM ボード）で、openSUSE MicroOS を UEFI ファームウェアと systemd-boot の組み合わせで動かしています。
 
-このボードの NPU を Immich の機械学習に使おうと mainline カーネルの `rocket` ドライバを試したところ、`modprobe rocket` しても `/dev/accel/accel0` が出てきませんでした。openSUSE が配布する `rk3588-rock-5-itx.dtb` で NPU のノードが `disabled` になっているのが原因で、NPU を有効にした DTB に差し替えようとしたのですが、そもそも OS 側の DTB は起動に使われていませんでした。
+このボードの NPU を Immich の機械学習に使おうと比較的最近 Linux カーネルに追加された `rocket` ドライバを試したところ、`modprobe rocket` しても `/dev/accel/accel0` が出てきませんでした。openSUSE が配布する `rk3588-rock-5-itx.dtb` で NPU のノードが `disabled` になっているのが原因で、NPU を有効にした DTB に差し替えようとしたのですが、そもそも OS 側の DTB は起動に使われていませんでした。
 
 ## Device Tree とは何か
 
