@@ -2,7 +2,7 @@
 title: "ARM ボードの UEFI ブートで Device Tree はどう渡されるか"
 emoji: "🌳"
 type: "tech" # tech: 技術記事 / idea: アイデア
-topics: ["linux", "arm", "devicetree", "systemdboot", "opensuse"]
+topics: ["linux", "arm", "uefi", "devicetree", "opensuse"]
 published: true
 ---
 
